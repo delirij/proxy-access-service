@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     POSTGRES_PORT:int = Field(default=5432, description="Postgres port")
     SECRET_KEY: str
     ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, description="Время жизни токена в минутах")
+
 
     # Celery
     CELERY_BROKER_URL:str = Field(
