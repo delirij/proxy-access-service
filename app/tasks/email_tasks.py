@@ -1,3 +1,4 @@
+"""Фоновые задачи Celery для асинхронной отправки писем с кодами активации пользователям сервиса"""
 import asyncio
 
 from email.message import EmailMessage
@@ -15,16 +16,16 @@ async def send_message_to_email(email: str, activation_key: str):
     message["From"] = "root@localhost"
     message["To"] = email
     message["Subject"] = "Твой ключ активации"
-    message.set_content(f"Твой ключ активации для регистрации на сервисе: {activation_key}")
+    message.set_content(f"Твой ключ активации для доступа к прокси: {activation_key}")
 
     await aiosmtplib.send(
         message, 
-        hostname=settings.POSTGRES_HOST,
+        hostname="mailpit",
         port=1025
     )
 
 
-@shared_task(name="send_acrivarion_email")
-def send_message():
-    asyncio.run(send_message_to_email())
+@shared_task(name="send_activation_email")
+def send_message(email: str, activation_key: str):
+    asyncio.run(send_message_to_email(email, activation_key))
     return True

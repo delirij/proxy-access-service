@@ -1,3 +1,4 @@
+"""Pydantic-схемы для виртуальных машин (прокси): структура данных для выдачи свободных серверов и проверки их статуса"""
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, EmailStr

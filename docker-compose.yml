@@ -1,17 +1,20 @@
 services:
-  app:
+  # Воркер Celery для выполнения фоновых задач (отправка email)
+  worker:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
     volumes:
       - .:/workspace:cached
-    command: sleep infinity
+    # Запуск воркера
+    command: celery -A app.celery_app worker --loglevel=info
     env_file:
       - .env
     depends_on:
-      - db
       - redis
+      - db
 
+  # База данных
   db:
     image: postgres:15-alpine
     container_name: proxy-service-db
@@ -19,11 +22,24 @@ services:
       - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" 
 
+  # Брокер сообщений для Celery
   redis:
     image: redis:7-alpine
     container_name: proxy-service-redis
     restart: always
+    ports:
+      - "6379:6379" # Проброс порта 
+
+  # Фейковый SMTP-сервер
+  mailpit:
+    image: axllent/mailpit
+    container_name: proxy-service-mail
+    ports:
+      - "8025:8025" # Веб-интерфейс (смотреть письма здесь)
+      - "1025:1025" # SMTP порт
 
 volumes:
   postgres_data:

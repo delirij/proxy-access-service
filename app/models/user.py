@@ -1,3 +1,4 @@
+"""Модель данных пользователя для SQLAlchemy"""
 from datetime import datetime
 
 from sqlalchemy import String, DateTime, func

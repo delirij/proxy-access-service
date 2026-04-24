@@ -1,3 +1,4 @@
+"""Утилиты безопасности: функции для криптографического хэширования паролей и безопасной верификации данных"""
 from jose import jwt
 from datetime import datetime, timedelta, timezone
 

@@ -1,3 +1,4 @@
+"""Конфигурация экземпляра Celery"""
 from celery import Celery
 
 from app.core import get_settings

@@ -1,3 +1,4 @@
+"""Модель данных виртуальной машины (прокси)"""
 from datetime import datetime
 
 from sqlalchemy import String, DateTime, func, ForeignKey, Integer
