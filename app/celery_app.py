@@ -1,6 +1,8 @@
 from celery import Celery
 
-from app.config import settings
+from app.core import get_settings
+
+settings = get_settings()
 
 # Инициализация Celery
 app = Celery("proxi_updater", broker=settings.CELERY_BROKER_URL)
@@ -14,4 +16,4 @@ app.conf.update(
 )
 
 # Автозагрузка задач
-app.autodiscover_tasks(["app.tasks"])
+app.autodiscover_tasks(["app.tasks.email_tasks"])
