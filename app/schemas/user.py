@@ -21,10 +21,11 @@ class UserRead(BaseModel):
 class UserUpdate(BaseModel):
     """Схема для обновления пользователя"""
     email: EmailStr | None = None
-
+    password: str | None = Field(min_length=8, description="Минимум 8 символов")
     model_config = ConfigDict(from_attributes=True)
 
 class TokenResponse(BaseModel):
-    acces_token: str
+    """Схема для валидации токена"""
+    access_token: str
     token_type: str
 

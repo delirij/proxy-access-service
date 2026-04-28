@@ -13,6 +13,7 @@ async def registration_user(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db)
 ):
+
     auth_service = AuthService(db)
 
     new_user = await auth_service.register_user(user_data)

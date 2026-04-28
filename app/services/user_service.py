@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 
 from app.models import User
 from app.schemas import UserUpdate
-
+from app.core import get_password_hash
 class UserService():
     """Сервис для бизнес-логики пользователей"""
     def __init__(self, db: AsyncSession):
@@ -39,7 +39,10 @@ class UserService():
         update_dict = user_data.model_dump(exclude_unset=True)
 
         for key, value in update_dict.items():
-            setattr(user, key, value)
+            if key == "password":
+                setattr(user, key, get_password_hash(value))
+            else:
+                setattr(user, key, value)
         
         await self.db.commit()
         await self.db.refresh(user)
