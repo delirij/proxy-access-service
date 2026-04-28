@@ -1,3 +1,4 @@
+"""Роутеры для управления пользователями: получение, обновление и удаление профилей"""
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +13,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def get_users(
     db: AsyncSession = Depends(get_db)
 ):
+    """Получить список всех пользователей системы"""
     users_service = UserService(db)
 
     users = await users_service.get_all_users()
@@ -23,7 +25,7 @@ async def get_users_by_id(
     user_id: int,
     db: AsyncSession = Depends(get_db)
 ):
-    
+    """Получить данные конкретного пользователя по его ID"""
     users_service = UserService(db)
 
     user = await users_service.get_user_by_id(user_id)
@@ -38,6 +40,7 @@ async def update_user(
     user_data: UserUpdate,
     db: AsyncSession = Depends(get_db)
 ):
+    """Обновить данные пользователя (email, пароль) по его ID"""
     users_service = UserService(db)
 
     updated_user = await users_service.update_user(user_id, user_data)
@@ -49,6 +52,7 @@ async def delete_user(
     user_id: int,
     db: AsyncSession = Depends(get_db)
 ):
+    """Удалить пользователя из базы данных по его ID"""
     users_service = UserService(db)
     deleted_user = await users_service.delete_user(user_id)
     return deleted_user

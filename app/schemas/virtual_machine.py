@@ -1,17 +1,17 @@
 """Pydantic-схемы для виртуальных машин (прокси): структура данных для выдачи свободных серверов и проверки их статуса"""
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, EmailStr
+from pydantic import BaseModel, ConfigDict, Field
 
 class VirtualMachineCreate(BaseModel):
-    """Схема для создания вирутальной машины"""
+    """Схема для создания виртуальной машины"""
     name: str = Field(..., min_length=5, max_length=255)
     host: str = Field(..., min_length=3)
     port: int = Field(..., ge=1, le=65535)
     protocol: str = Field(..., pattern="^(socks5|http|https)$")
 
 class VirtualMachineRead(BaseModel):
-    """Схема получения данных вирутальной машины"""
+    """Схема получения данных виртуальной машины"""
     id: int
     name: str
     host: str

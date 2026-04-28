@@ -8,6 +8,7 @@ from app.core import Base
 
 
 class VirtualMachine(Base):
+    """Модель виртуальной машины (прокси-сервера)"""
     __tablename__ = 'virtual_machines'
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -28,4 +29,4 @@ class VirtualMachine(Base):
         nullable=True
     )
 
-    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
