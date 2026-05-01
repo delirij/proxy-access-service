@@ -7,7 +7,7 @@ from app.services import AuthService
 from app.schemas import UserRead, UserCreate, TokenResponse
 from app.core import get_db
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/api", tags=["auth"])
 
 @router.post("/register", response_model=UserRead)
 async def registration_user(

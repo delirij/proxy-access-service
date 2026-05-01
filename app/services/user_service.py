@@ -7,9 +7,10 @@ from fastapi import HTTPException, status
 from app.models import User
 from app.schemas import UserUpdate
 from app.core import get_password_hash
-class UserService():
+class UserService:
     """Сервис для бизнес-логики пользователей"""
     def __init__(self, db: AsyncSession):
+        """Инициализация сервиса с сессией базы данных"""
         self.db = db
     
     async def get_all_users(self):

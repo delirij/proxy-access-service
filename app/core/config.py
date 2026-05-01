@@ -6,18 +6,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     #PostgreSQL
-    POSTGRES_USER:str = Field(default="admin", description="Postgres User")
-    POSTGRES_PASSWORD:str = Field(default="password", description="Postgres password")
-    POSTGRES_DB:str = Field(default="postgres", description="Database name")
-    POSTGRES_HOST:str = Field(default="localhost", description="PostgreSQL host")
-    POSTGRES_PORT:int = Field(default=5432, description="Postgres port")
+    POSTGRES_USER: str = Field(default="admin", description="Postgres User")
+    POSTGRES_PASSWORD: str = Field(default="password", description="Postgres password")
+    POSTGRES_DB: str = Field(default="postgres", description="Database name")
+    POSTGRES_HOST: str = Field(default="localhost", description="PostgreSQL host")
+    POSTGRES_PORT: int = Field(default=5432, description="Postgres port")
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=30, description="Время жизни токена в минутах")
+    
+    ADMIN_SECRET_KEY: str = Field(default="super-secret-admin-key", description="Статический ключ для доступа к админке")
 
 
     # Celery
-    CELERY_BROKER_URL:str = Field(
+    CELERY_BROKER_URL: str = Field(
         default="redis://localhost:6379/0",
         description="Celery Broker URL (Redis)"
     )

@@ -9,8 +9,9 @@ from fastapi import HTTPException, status
 from app.models import VirtualMachine, User
 from app.schemas import VirtualMachineUpdate, VirtualMachineCreate
 
-class VirtualMachineService():
+class VirtualMachineService:
     def __init__(self, db: AsyncSession):
+        """Инициализация сервиса с сессией базы данных"""
         self.db = db
 
     async def activate_key(self, key: str):

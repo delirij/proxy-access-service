@@ -11,9 +11,10 @@ from app.schemas import UserCreate
 from app.core import get_password_hash, verify_password, create_access_token
 from app.tasks.email_tasks import send_message
 
-class AuthService():
+class AuthService:
     """Сервис для регистрации пользователя и логина"""
     def __init__(self, db: AsyncSession):
+        """Инициализация сервиса с сессией базы данных"""
         self.db = db
 
     async def register_user(self, user_data: UserCreate):

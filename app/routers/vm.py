@@ -7,9 +7,9 @@ from app.services import VirtualMachineService
 from app.schemas import  VirtualMachineRead
 from app.core import get_db
 
-router = APIRouter(prefix="/vm", tags=["vm"])
+router = APIRouter(prefix="/api", tags=["vm"])
 
-@router.post("/activate_proxy", response_model=VirtualMachineRead)
+@router.post("/activate-key", response_model=VirtualMachineRead)
 async def activate_and_get_proxy(
     activate_key: str = Body(..., embed=True),
     db: AsyncSession = Depends(get_db)
