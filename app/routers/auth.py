@@ -1,11 +1,12 @@
 """Роутеры для аутентификации: регистрация новых пользователей и авторизация (вход)"""
 from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services import AuthService
 from app.schemas import UserRead, UserCreate, TokenResponse
-from app.core import get_db
+from app.core.database import get_db
 
 router = APIRouter(prefix="/api", tags=["auth"])
 
@@ -24,12 +25,12 @@ async def registration_user(
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
-    user_data: UserCreate,
+    form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
 ):
     """Авторизовать пользователя по email и паролю, выдать JWT-токен доступа"""
     auth_service = AuthService(db)
 
-    token_data = await auth_service.login_user(user_data)
+    token_data = await auth_service.login_user(form_data.username, form_data.password)
 
     return token_data

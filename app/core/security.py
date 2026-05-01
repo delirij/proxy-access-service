@@ -4,25 +4,29 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import Security, HTTPException, status, Depends
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
-from passlib.context import CryptContext
+import bcrypt
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.core import get_settings, get_db
+from app.core.config import get_settings
+from app.core.database import get_db
 from app.models import User
 
 settings = get_settings()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 def get_password_hash(password: str) -> str:
     """Берет сырой пароль и хеширует его"""
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed_password.decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Сверяет сырой пароль с хешированным"""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except ValueError:
+        return False
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Создает  JWT токен доступа"""
@@ -63,5 +67,23 @@ async def get_current_user(
         db: AsyncSession = Depends(get_db)
 ) -> User:
     """Расшифровыывает токен и возвращает модель текущего авторизованного пользователя"""
-    pass
+    credential_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Не удалось подтвердить учетные данные",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credential_exception
+    except JWTError:
+        raise credential_exception
     
+    query = select(User).where(User.email==email)
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise credential_exception
+    return user 

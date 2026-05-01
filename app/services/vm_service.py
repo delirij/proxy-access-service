@@ -26,11 +26,15 @@ class VirtualMachineService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Такого ключа не существует"
             )
+        
+        # Проверяем, не истек ли срок действия ключа активации
         if user.activation_key_expires and user.activation_key_expires < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Срок действия ключа активации истёк"
             )
+        
+        # Обнуляем ключ после успешного применения (он одноразовый)
         user.activation_key = None
         user.activation_key_expires = None
 
@@ -48,8 +52,11 @@ class VirtualMachineService:
         result = await self.db.execute(query)
         vm = result.scalar_one_or_none()
 
+        from app.routers.websocket import manager
 
         if not vm:
+            # Если свободных машин нет, сразу сообщаем в сокет и выдаем 503 ошибку
+            await manager.send_personal_message("no_free_vms", user_id)
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Все виртуальные машины заняты"
@@ -60,6 +67,9 @@ class VirtualMachineService:
 
         await self.db.commit()
         await self.db.refresh(vm)
+
+        # Оповещаем пользователя, что ВМ выдана
+        await manager.send_personal_message("connected", user_id)
 
         return vm
     
@@ -133,7 +143,14 @@ class VirtualMachineService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Виртуальная машина не найдена"
             )
+        
+        user_id = vm.current_user_id
+        
         await self.db.delete(vm)
         await self.db.commit()
+
+        if user_id:
+            from app.routers.websocket import manager
+            await manager.send_personal_message("disconnected", user_id)
 
         return vm

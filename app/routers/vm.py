@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services import VirtualMachineService
 from app.schemas import  VirtualMachineRead
-from app.core import get_db
+from app.core.database import get_db
 
 router = APIRouter(prefix="/api", tags=["vm"])
 

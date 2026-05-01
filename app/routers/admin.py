@@ -1,10 +1,12 @@
+"""Роутеры для панели администратора: управление пользователями и виртуальными машинами"""
 from fastapi import APIRouter, HTTPException, Depends, status
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services import UserService, VirtualMachineService
 from app.schemas import UserRead, UserUpdate, VirtualMachineRead, VirtualMachineUpdate, VirtualMachineCreate
-from app.core import get_db, security
+from app.core.database import get_db
+from app.core import security
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(security.verify_admin_key)])
 

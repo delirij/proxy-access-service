@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 
 from app.models import User
 from app.schemas import UserCreate
-from app.core import get_password_hash, verify_password, create_access_token
+from app.core.security import get_password_hash, verify_password, create_access_token
 from app.tasks.email_tasks import send_message
 
 class AuthService:
@@ -58,14 +58,14 @@ class AuthService:
 
         return new_user
     
-    async def login_user(self, user_data: UserCreate):
+    async def login_user(self, email: str, password: str):
         """Функция входа пользователя"""
 
-        query = select(User).where(User.email == user_data.email)
+        query = select(User).where(User.email == email)
         result = await self.db.execute(query)
         existing_user = result.scalar_one_or_none()
 
-        if not existing_user or not verify_password(user_data.password, existing_user.password):
+        if not existing_user or not verify_password(password, existing_user.password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Неверный email или пароль"

@@ -1,18 +1,38 @@
 services:
-  # Воркер Celery для выполнения фоновых задач (отправка email)
-  worker:
-    build:
-      context: .
-      dockerfile: .devcontainer/Dockerfile
-    volumes:
-      - .:/workspace:cached
-    # Запуск воркера
-    command: celery -A app.celery_app worker --loglevel=info
+  # Главный сервер FastAPI
+  api:
+    build: .
+    container_name: proxy-service-api
+    ports:
+      - "8000:8000"
     env_file:
       - .env
+    volumes:
+      - .:/app
+    restart: unless-stopped
     depends_on:
-      - redis
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  # Воркер Celery для выполнения фоновых задач (отправка email)
+  worker:
+    build: .
+    container_name: proxy-service-worker
+    # Запуск воркера
+    command: celery -A app.celery_app worker --loglevel=info
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
 
   # База данных
   db:
@@ -24,6 +44,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432" 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # Брокер сообщений для Celery
   redis:
@@ -32,6 +58,11 @@ services:
     restart: always
     ports:
       - "6379:6379" # Проброс порта 
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   # Фейковый SMTP-сервер
   mailpit:

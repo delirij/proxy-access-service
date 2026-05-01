@@ -5,7 +5,7 @@ from email.message import EmailMessage
 from celery import shared_task
 import aiosmtplib
 
-from app.core import get_settings
+from app.core.config import get_settings
 
 settings = get_settings()
 

@@ -1,4 +1,7 @@
 """Сервисный слой для управления пользователями: реализация CRUD-операций в базе данных"""
+import uuid
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -6,7 +9,9 @@ from fastapi import HTTPException, status
 
 from app.models import User
 from app.schemas import UserUpdate
-from app.core import get_password_hash
+from app.core.security import get_password_hash
+from app.tasks.email_tasks import send_message
+
 class UserService:
     """Сервис для бизнес-логики пользователей"""
     def __init__(self, db: AsyncSession):
@@ -50,6 +55,20 @@ class UserService:
 
         return user
     
+    async def update_activation_key(self, user: User):
+        """Сгенерировать новый ключ активации и отправить на почту"""
+        new_key = str(uuid.uuid4())
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+        
+        user.activation_key = new_key
+        user.activation_key_expires = expires_at
+        
+        await self.db.commit()
+        await self.db.refresh(user)
+        
+        send_message.delay(user.email, new_key)
+        return user
+
     async def delete_user(self, id: int):
         """Удалить пользователя"""
         user = await self.get_user_by_id(id)
