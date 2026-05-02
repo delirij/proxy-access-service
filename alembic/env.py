@@ -1,6 +1,5 @@
 import asyncio
 import sys
-import os
 from pathlib import Path
 from logging.config import fileConfig
 
@@ -15,7 +14,7 @@ from alembic import context
 from app.core.config import get_settings
 from app.core.database import Base
 
-from app.models import *
+from app.models import User, VirtualMachine
 
 settings = get_settings()
 

@@ -1,14 +1,12 @@
 """Роутеры для WebSocket-соединений: отслеживание статуса виртуальных машин в реальном времени"""
 import asyncio
+import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.services import UserService
-from app.schemas import UserRead
 from app.core.database import get_db
-from app.core import security
 from app.models import VirtualMachine
 
 websocket_router = APIRouter()
@@ -48,10 +46,22 @@ async def ws_status(
     """Эндпоинт WebSocket для информирования клиента о статусе его ВМ"""
     await manager.connect(websocket, user_id)
 
+    # Немедленно проверяем и отправляем статус при подключении, чтобы интерфейс десктопа сразу "позеленел"
+    query = select(VirtualMachine).where(VirtualMachine.current_user_id == user_id)
+    result = await db.execute(query)
+    initial_vm = result.scalar_one_or_none()
+
+    if initial_vm:
+        initial_status = "connected" if initial_vm.is_active else "error"
+        await manager.send_personal_message(initial_status, user_id)
+    else:
+        await manager.send_personal_message("disconnected", user_id)
+
     async def send_periodic_status():
         """Фоновая задача для периодической проверки статуса ВМ пользователя"""
         try:
             while True:
+                await asyncio.sleep(5) # Сначала ждем 5 секунд, так как первый статус уже отправлен выше
                 db.expire_all() # Очищаем кэш сессии для свежих данных из БД
                 
                 query = select(VirtualMachine).where(VirtualMachine.current_user_id == user_id)
@@ -63,19 +73,18 @@ async def ws_status(
                     await manager.send_personal_message(status_msg, user_id)
                 else:
                     await manager.send_personal_message("disconnected", user_id)
-                
-                await asyncio.sleep(5) # Ждем 5 секунд перед следующей отправкой
         except asyncio.CancelledError:
             pass
-        except Exception:
-            pass
+        except Exception as e:
+            # Логируем непредвиденные ошибки в фоновой задаче, чтобы они не пропали бесследно
+            logging.error(f"Error in websocket status loop for user {user_id}: {e}")
 
     task = asyncio.create_task(send_periodic_status())
 
     try:
         while True:
-            # Ждем сообщение от пользователя
-            data = await websocket.receive_text()
+            # Поддерживаем соединение активным, ожидая сообщения от клиента (хотя в данном ТЗ они не обрабатываются)
+            await websocket.receive_text()
             
     except WebSocketDisconnect:
         # Пользователь закрыл приложение или пропал интернет

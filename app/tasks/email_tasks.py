@@ -5,10 +5,6 @@ from email.message import EmailMessage
 from celery import shared_task
 import aiosmtplib
 
-from app.core.config import get_settings
-
-settings = get_settings()
-
 async def send_message_to_email(email: str, activation_key: str):
     """Функция отправки сообщения на email"""
 

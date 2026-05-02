@@ -1,10 +1,19 @@
-# Virtual environments
-.venv/
-# IDE
-.vscode/
-
-# Environment variables
-.env
-
 # Python
 __pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environments
+.env
+.venv/
+venv/
+env/
+
+# Docker volumes (чтобы данные БД не попали в гит)
+postgres_data/
+
+# IDEs
+.idea/
+.vscode/
+*.swp

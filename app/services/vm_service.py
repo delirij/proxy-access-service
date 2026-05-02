@@ -47,16 +47,14 @@ class VirtualMachineService:
         query = select(VirtualMachine).where(
             VirtualMachine.current_user_id.is_(None),
             VirtualMachine.is_active.is_(True)
-        ).limit(1)
+        ).with_for_update(skip_locked=True).limit(1)
 
         result = await self.db.execute(query)
         vm = result.scalar_one_or_none()
 
-        from app.routers.websocket import manager
-
         if not vm:
-            # Если свободных машин нет, сразу сообщаем в сокет и выдаем 503 ошибку
-            await manager.send_personal_message("no_free_vms", user_id)
+            # Если свободных машин нет, выдаем 503 ошибку. 
+            # Отправка в сокет здесь не нужна, так как клиент к нему еще не подключился.
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Все виртуальные машины заняты"
@@ -68,9 +66,6 @@ class VirtualMachineService:
         await self.db.commit()
         await self.db.refresh(vm)
 
-        # Оповещаем пользователя, что ВМ выдана
-        await manager.send_personal_message("connected", user_id)
-
         return vm
     
     async def get_all_vm(self):
@@ -80,9 +75,9 @@ class VirtualMachineService:
 
         return result.scalars().all()
     
-    async def get_vm_by_id(self, id: int):
+    async def get_vm_by_id(self, vm_id: int):
         """Получить данные виртуальной машины по её ID"""
-        query = select(VirtualMachine).where(VirtualMachine.id == id)
+        query = select(VirtualMachine).where(VirtualMachine.id == vm_id)
         result = await self.db.execute(query)
 
         return result.scalar_one_or_none()
@@ -114,9 +109,9 @@ class VirtualMachineService:
         
         return new_vm
 
-    async def vm_update(self, id: int, vm_data: VirtualMachineUpdate):
+    async def vm_update(self, vm_id: int, vm_data: VirtualMachineUpdate):
         """Обновить настройки существующей виртуальной машины"""
-        vm = await self.get_vm_by_id(id)
+        vm = await self.get_vm_by_id(vm_id)
 
         if not vm:
             raise HTTPException(
@@ -134,9 +129,9 @@ class VirtualMachineService:
 
         return vm
     
-    async def delete_vm(self, id: int):
+    async def delete_vm(self, vm_id: int):
         """Удалить виртуальную машину из базы данных"""
-        vm = await self.get_vm_by_id(id)
+        vm = await self.get_vm_by_id(vm_id)
 
         if not vm:
             raise HTTPException(

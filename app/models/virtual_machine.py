@@ -1,7 +1,7 @@
 """Модель данных виртуальной машины (прокси)"""
 from datetime import datetime
 
-from sqlalchemy import String, DateTime, func, ForeignKey, Integer
+from sqlalchemy import String, DateTime, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base

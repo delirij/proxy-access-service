@@ -1,4 +1,12 @@
 services:
+  # Frontend веб-интерфейс (Vue 3 + Nginx)
+  frontend:
+    build: ./frontend
+    container_name: proxy-service-frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
   # Главный сервер FastAPI
   api:
     build: .

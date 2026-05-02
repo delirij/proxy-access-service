@@ -35,7 +35,7 @@ class AuthService:
         # Хеширование пароля
         hashed_password = get_password_hash(user_data.password)
 
-        #Генерация ключа активации (который будет отправлен на почту), время жизни ключа 30 минут (потом придется запрашивать новый)
+        # Генерация ключа активации (который будет отправлен на почту), время жизни ключа 30 минут (потом придется запрашивать новый)
         activation_key = str(uuid.uuid4())
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
 
@@ -53,7 +53,7 @@ class AuthService:
         await self.db.commit()
         await self.db.refresh(new_user)
 
-        # Отправляем сообщение с ключем активации на почту пользователю
+        # Отправляем сообщение с ключом активации на почту пользователю
         send_message.delay(new_user.email, activation_key)
 
         return new_user

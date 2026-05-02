@@ -25,16 +25,16 @@ class UserService:
 
         return result.scalars().all()
     
-    async def get_user_by_id(self, id: int):
+    async def get_user_by_id(self, user_id: int):
         """Получить пользователя по id"""
-        query = select(User).where(User.id == id)
+        query = select(User).where(User.id == user_id)
         result = await self.db.execute(query)
 
         return result.scalar_one_or_none()
     
-    async def update_user(self, id: int, user_data: UserUpdate):
+    async def update_user(self, user_id: int, user_data: UserUpdate):
         """Обновить данные пользователя"""
-        user = await self.get_user_by_id(id)
+        user = await self.get_user_by_id(user_id)
 
         if not user:
             raise HTTPException(
@@ -69,9 +69,9 @@ class UserService:
         send_message.delay(user.email, new_key)
         return user
 
-    async def delete_user(self, id: int):
+    async def delete_user(self, user_id: int):
         """Удалить пользователя"""
-        user = await self.get_user_by_id(id)
+        user = await self.get_user_by_id(user_id)
 
         if not user:
             raise HTTPException(
