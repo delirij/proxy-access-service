@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.core.database import get_db
 from app.models import VirtualMachine
@@ -83,12 +83,16 @@ async def ws_status(
 
     try:
         while True:
-            # Поддерживаем соединение активным, ожидая сообщения от клиента (хотя в данном ТЗ они не обрабатываются)
+            # Поддерживаем соединение активным, ожидая сообщения от клиента
             await websocket.receive_text()
             
     except WebSocketDisconnect:
         # Пользователь закрыл приложение или пропал интернет
-        pass
+        # Освобождаем виртуальную машину при отключении сокета
+        await db.execute(
+            update(VirtualMachine).where(VirtualMachine.current_user_id == user_id).values(current_user_id=None)
+        )
+        await db.commit()
     finally:
         task.cancel() # Останавливаем рассылку при обрыве соединения
         manager.disconnect(user_id)

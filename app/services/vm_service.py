@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from fastapi import HTTPException, status
 
@@ -44,6 +44,13 @@ class VirtualMachineService:
     
     async def get_free_vm(self, user_id: int):
         """Находит свободную виртуалку и привязывает к ней юзера"""
+
+        # Освобождаем предыдущую ВМ пользователя, если он переподключается с новым ключом
+        await self.db.execute(
+                    update(VirtualMachine).where(VirtualMachine.current_user_id == user_id).values(current_user_id=None)
+        )
+        await self.db.flush()
+
         query = select(VirtualMachine).where(
             VirtualMachine.current_user_id.is_(None),
             VirtualMachine.is_active.is_(True)

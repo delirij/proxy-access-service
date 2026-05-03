@@ -3,11 +3,11 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from fastapi import HTTPException, status
 
-from app.models import User
+from app.models import User, VirtualMachine
 from app.schemas import UserUpdate
 from app.core.security import get_password_hash
 from app.tasks.email_tasks import send_message
@@ -78,8 +78,17 @@ class UserService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Пользователь не найден"
             )
+            
+        # Освобождаем виртуальную машину (если она была привязана к пользователю),
+        await self.db.execute(
+            update(VirtualMachine).where(VirtualMachine.current_user_id == user_id).values(current_user_id=None)
+        )
         
         await self.db.delete(user)
         await self.db.commit()
 
-        return True
+        # Отправляем сообщение об отключении в вебсокет
+        from app.routers.websocket import manager
+        await manager.send_personal_message("disconnected", user_id)
+
+        return user
