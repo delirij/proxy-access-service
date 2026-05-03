@@ -26,6 +26,8 @@ class ProxyConnectorApp(ctk.CTk):
         
         self.ws_thread = None
         self.ws_loop = None
+        self.is_connected = False
+        self.current_ws = None
         
         # UI Элементы
         self.title_label = ctk.CTkLabel(self, text="Подключение к прокси", font=ctk.CTkFont(size=20, weight="bold"))
@@ -36,6 +38,8 @@ class ProxyConnectorApp(ctk.CTk):
         
         self.connect_btn = ctk.CTkButton(self, text="Подключиться", command=self.start_connection)
         self.connect_btn.pack(pady=10)
+        self.default_btn_color = self.connect_btn.cget("fg_color")
+        self.default_hover_color = self.connect_btn.cget("hover_color")
         
         self.status_label = ctk.CTkLabel(self, text="Статус: Отключено", text_color="gray")
         self.status_label.pack(pady=10)
@@ -55,8 +59,25 @@ class ProxyConnectorApp(ctk.CTk):
         """Безопасное включение кнопки после обрыва связи или ошибки"""
         self.connect_btn.configure(state="normal")
 
+    def set_connected_ui(self):
+        """Настройка интерфейса для состояния Подключено"""
+        self.update_status("Подключено", "#28a745")
+        self.is_connected = True
+        self.connect_btn.configure(text="Отключиться", fg_color="red", hover_color="darkred", state="normal")
+
+    def set_disconnected_ui(self, status_text, status_color):
+        """Сброс интерфейса в начальное состояние (Отключено)"""
+        self.update_status(status_text, status_color)
+        self.is_connected = False
+        self.connect_btn.configure(text="Подключиться", fg_color=self.default_btn_color, hover_color=self.default_hover_color, state="normal")
+        self.vm_info_label.configure(text="Данные сервера появятся здесь", text_color="gray")
+
     def start_connection(self):
         """Обработчик нажатия на кнопку"""
+        if self.is_connected:
+            self.disconnect_proxy()
+            return
+            
         key = self.key_entry.get().strip()
         if not key:
             self.update_status("Введите ключ!", "red")
@@ -67,6 +88,13 @@ class ProxyConnectorApp(ctk.CTk):
         
         # Выполняем HTTP запрос в отдельном потоке, чтобы не заморозить UI
         threading.Thread(target=self.activate_key, args=(key,), daemon=True).start()
+
+    def disconnect_proxy(self):
+        """Инициализация отключения пользователем"""
+        self.update_status("Отключение...", "yellow")
+        self.connect_btn.configure(state="disabled")
+        if self.current_ws and self.ws_loop:
+            asyncio.run_coroutine_threadsafe(self.current_ws.close(), self.ws_loop)
 
     def activate_key(self, key):
         """Отправка ключа в API и получение данных ВМ"""
@@ -113,24 +141,24 @@ class ProxyConnectorApp(ctk.CTk):
         url = f"{WS_URL}{user_id}"
         try:
             async with websockets.connect(url) as websocket:
+                self.current_ws = websocket
                 while True:
                     message = await websocket.recv()
                     # Для взаимодействия с UI из другого потока используем .after()
                     if message == "connected":
-                        self.after(0, self.update_status, "Подключено", "#28a745")
+                        self.after(0, self.set_connected_ui)
                     elif message == "disconnected":
-                        self.after(0, self.update_status, "Отключено", "gray")
-                        self.after(0, self.enable_button)
+                        self.after(0, self.set_disconnected_ui, "Отключено", "gray")
                     elif message == "no_free_vms":
-                        self.after(0, self.update_status, "Все прокси заняты", "red")
-                        self.after(0, self.enable_button)
+                        self.after(0, self.set_disconnected_ui, "Все прокси заняты", "red")
                     elif message == "error":
-                        self.after(0, self.update_status, "Ошибка сервера", "red")
-                        self.after(0, self.enable_button)
+                        self.after(0, self.set_disconnected_ui, "Ошибка сервера", "red")
+        except websockets.exceptions.ConnectionClosed:
+            # Нормальное отключение со стороны клиента
+            self.after(0, self.set_disconnected_ui, "Отключено", "gray")
         except Exception as e:
             logging.error(f"WebSocket connection error: {e}")
-            self.after(0, self.update_status, "Соединение потеряно", "red")
-            self.after(0, self.enable_button)
+            self.after(0, self.set_disconnected_ui, "Соединение потеряно", "red")
 
 if __name__ == "__main__":
     app = ProxyConnectorApp()
